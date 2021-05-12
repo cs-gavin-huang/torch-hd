@@ -80,7 +80,7 @@ def test_hd(model, classifier, testloader, device = 'cuda'):
     nclasses = classifier.class_hvs.shape[0]
     overall_acc = 0.0
     mistakes = {}
-    t = tqdm(range(len(trainloader)))
+    t = tqdm(range(len(testloader)))
 
     for i in range(nclasses):
         mistakes[i] = 0.0

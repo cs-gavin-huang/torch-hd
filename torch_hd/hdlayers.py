@@ -5,20 +5,30 @@ import math
 
 
 class hd_rp_encoder(nn.Module):
-    def __init__(self, size_in, D=5000, p=0.5):
+    def __init__(self, size_in, D=5000, p=0.5, quantize = True):
         super().__init__()
         self.dim = D
+        self.quantize = quantize
         probs = torch.ones((size_in, D)) * p
         projection = 2 * torch.bernoulli(probs) - 1
+        rand_proj = torch.rand(size = (size_in, D))
+        projection = torch.where(rand_proj > 0.5, 1, -1).type(torch.float)
         self.hdweights = nn.Parameter(projection, requires_grad=False)
         self.flat = nn.Flatten()
   
     def forward(self, x):
-        with torch.no_grad():
-            x = self.flat(x)
-            x = torch.matmul(x, self.hdweights)
+        x = self.flat(x)
+        out = torch.matmul(x, self.hdweights.detach())
+        
+        if self.quantize:
+            out = torch.sign(out)
+        else:
+            if self.training:
+                out = nn.Tanh(out)
+            else:
+                out = torch.sign(out)
 
-        return x
+        return out
 
 class hdsign(torch.autograd.Function):
     @staticmethod
@@ -132,16 +142,15 @@ class hd_id_lvl_encoder(nn.Module):
         self.flat = nn.Flatten()
     
     def forward(self, x):
-        with torch.no_grad():
-            x = self.flat(x)
-            x = x.clamp(self.minval, self.maxval)
-            
-            if self.pact:
-                x = self.activn(x, self.alpha, self.k)
+        x = self.flat(x)
+        x = x.clamp(self.minval, self.maxval)
+        
+        if self.pact:
+            x = self.activn(x, self.alpha, self.k)
 
-            idx = (x // self.bin_len).type(torch.long)
-            encoded = (self.lvl_hvs[idx] * self.id_hvs).sum(dim=1)
-            encoded = torch.clamp(encoded, -1, 1)
+        idx = (x // self.bin_len).type(torch.long)
+        encoded = (self.lvl_hvs.detach()[idx] * self.id_hvs.detach()).sum(dim=1)
+        encoded = torch.clamp(encoded, -1, 1)
         
         return encoded
 
@@ -154,9 +163,8 @@ class hd_id_lvl_decoder(nn.Module):
         self.bin_len = bin_len
       
     def forward(self, x):
-        with torch.no_grad():
-            decoded = x.repeat(1, self.id_hvs.shape[0]).view(x.shape[0], self.id_hvs.shape[0], x.shape[1]) * self.id_hvs
-            decoded = torch.matmul(decoded, self.lvl_hvs.transpose(0,1)).max(dim=2)[1] * self.bin_len
+        decoded = x.repeat(1, self.id_hvs.shape[0]).view(x.shape[0], self.id_hvs.shape[0], x.shape[1]) * self.id_hvs.detach()
+        decoded = torch.matmul(decoded, self.lvl_hvs.detach().transpose(0,1)).max(dim=2)[1] * self.bin_len
             
         return decoded
 
@@ -184,8 +192,9 @@ class hd_classifier(nn.Module):
         self.alpha = alpha
     
     def forward(self, encoded, targets = None):
+        scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
         with torch.no_grad():
-            scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
+
 
             if targets is None:
                 return scores
