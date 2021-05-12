@@ -177,9 +177,8 @@ class hdcodec(nn.Module):
         )
     
     def forward(self, x):
-        with torch.no_grad():
-            out = self.encoder(x)
-            out = self.decoder(out)
+        out = self.encoder(x)
+        out = self.decoder(out)
 
         return out
 
@@ -193,9 +192,8 @@ class hd_classifier(nn.Module):
     
     def forward(self, encoded, targets = None):
         scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
+
         with torch.no_grad():
-
-
             if targets is None:
                 return scores
 
@@ -228,10 +226,9 @@ class hd_skc_layer(nn.Module):
         self.flat = nn.Flatten()
     
     def forward(self, x):
-        with torch.no_grad():
-            x = self.flat(x)
-            encoded = torch.cdist(x, self.prototypes, p = 2)
-            encoded = torch.where(encoded > self.r, 1, -1).type(torch.float)
+        x = self.flat(x)
+        encoded = torch.cdist(x, self.prototypes.detach(), p = 2)
+        encoded = torch.where(encoded > self.r, 1, -1).type(torch.float)
 
         return encoded
 
