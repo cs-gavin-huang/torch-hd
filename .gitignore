@@ -1,0 +1,5 @@
+build/
+dist/
+torch_gists.egg-info/
+torch_gist
+__pycache__
