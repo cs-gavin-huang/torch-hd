@@ -1,5 +1,4 @@
 build/
 dist/
 torch_hd.egg-info/
-torch_hd
 __pycache__
