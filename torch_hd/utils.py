@@ -33,7 +33,7 @@ def hd_argparser():
 
     return parser
 
-def train_hd(model, classifier, trainloader, nepochs=10, device='cpu', batch_size = 512):
+def train_hd(model, classifier, trainloader, nepochs=10, device='cpu'):
     model = model.to(device)
     classifier = classifier.to(device)
     t = tqdm(range(len(trainloader)))
@@ -48,14 +48,13 @@ def train_hd(model, classifier, trainloader, nepochs=10, device='cpu', batch_siz
         overall_sum = 0.0
 
         for idx, batch in enumerate(trainloader):
-            t.set_description('Epoch {} train_acc: {} sparseness: {}'.format(epoch, epoch_acc, sparsity))
+            t.set_description('Epoch {} train_acc: {}'.format(epoch, epoch_acc))
             x, y = batch
             x = x.to(device)
             y = y.to(device)
 
-            encoded = model(x)
-            overall_sum += encoded.sum().cpu().item()
-            scores = classifier(encoded, y)
+            x = model(x)
+            scores = classifier(x, y)
             _, preds = scores.max(dim=1)
 
             acc = accuracy(preds, y) 
@@ -63,10 +62,8 @@ def train_hd(model, classifier, trainloader, nepochs=10, device='cpu', batch_siz
             t.update()
         
         overall_acc /= (idx + 1)
-        overall_sum /= ((idx + 1) * batch_size * encoded.shape[1])
         epoch_acc = overall_acc
-        sparsity = overall_sum
-        t.set_description('Epoch {} train_acc: {} sparseness: {}'.format(epoch, epoch_acc, sparsity))
+        t.set_description('Epoch {} train_acc: {}'.format(epoch, epoch_acc))
         t.refresh()
         t.reset()
     

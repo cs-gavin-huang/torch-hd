@@ -14,8 +14,9 @@ class hd_rp_encoder(nn.Module):
         self.flat = nn.Flatten()
   
     def forward(self, x):
-        x = self.flat(x)
-        x = torch.matmul(x, self.hdweights)
+        with torch.no_grad():
+            x = self.flat(x)
+            x = torch.matmul(x, self.hdweights)
 
         return x
 
@@ -131,15 +132,16 @@ class hd_id_lvl_encoder(nn.Module):
         self.flat = nn.Flatten()
     
     def forward(self, x):
-        x = self.flat(x)
-        x = x.clamp(self.minval, self.maxval)
-        
-        if self.pact:
-            x = self.activn(x, self.alpha, self.k)
+        with torch.no_grad():
+            x = self.flat(x)
+            x = x.clamp(self.minval, self.maxval)
+            
+            if self.pact:
+                x = self.activn(x, self.alpha, self.k)
 
-        idx = (x // self.bin_len).type(torch.long)
-        encoded = (self.lvl_hvs[idx] * self.id_hvs).sum(dim=1)
-        encoded = torch.clamp(encoded, -1, 1)
+            idx = (x // self.bin_len).type(torch.long)
+            encoded = (self.lvl_hvs[idx] * self.id_hvs).sum(dim=1)
+            encoded = torch.clamp(encoded, -1, 1)
         
         return encoded
 
@@ -152,8 +154,9 @@ class hd_id_lvl_decoder(nn.Module):
         self.bin_len = bin_len
       
     def forward(self, x):
-        decoded = x.repeat(1, self.id_hvs.shape[0]).view(x.shape[0], self.id_hvs.shape[0], x.shape[1]) * self.id_hvs
-        decoded = torch.matmul(decoded, self.lvl_hvs.transpose(0,1)).max(dim=2)[1] * self.bin_len
+        with torch.no_grad():
+            decoded = x.repeat(1, self.id_hvs.shape[0]).view(x.shape[0], self.id_hvs.shape[0], x.shape[1]) * self.id_hvs
+            decoded = torch.matmul(decoded, self.lvl_hvs.transpose(0,1)).max(dim=2)[1] * self.bin_len
             
         return decoded
 
@@ -166,8 +169,9 @@ class hdcodec(nn.Module):
         )
     
     def forward(self, x):
-        out = self.encoder(x)
-        out = self.decoder(out)
+        with torch.no_grad():
+            out = self.encoder(x)
+            out = self.decoder(out)
 
         return out
 
@@ -180,23 +184,24 @@ class hd_classifier(nn.Module):
         self.alpha = alpha
     
     def forward(self, encoded, targets = None):
-        scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
+        with torch.no_grad():
+            scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
 
-        if targets is None:
-            return scores
+            if targets is None:
+                return scores
 
-        if self.training:
-            _, preds = scores.max(dim=1)
+            if self.training:
+                _, preds = scores.max(dim=1)
 
-            for label in range(self.nclasses):
-                if label in targets:
-                    incorrect = encoded[torch.bitwise_and(targets != preds, targets == label)]
-                    incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze() * self.alpha
-                    self.class_hvs[label] += incorrect.clip(-1, 1)
+                for label in range(self.nclasses):
+                    if label in targets:
+                        incorrect = encoded[torch.bitwise_and(targets != preds, targets == label)]
+                        incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze() * self.alpha
+                        self.class_hvs[label] += incorrect.clip(-1, 1)
 
-                incorrect = encoded[torch.bitwise_and(targets != preds, preds == label)]
-                incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze()
-                self.class_hvs[label] -= incorrect.clip(-1, 1) * self.alpha
+                    incorrect = encoded[torch.bitwise_and(targets != preds, preds == label)]
+                    incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze()
+                    self.class_hvs[label] -= incorrect.clip(-1, 1) * self.alpha
         
         return scores
 
@@ -214,9 +219,10 @@ class hd_skc_layer(nn.Module):
         self.flat = nn.Flatten()
     
     def forward(self, x):
-        x = self.flat(x)
-        encoded = torch.cdist(x, self.prototypes, p = 2)
-        encoded = torch.where(encoded > self.r, 1, -1).type(torch.float)
+        with torch.no_grad():
+            x = self.flat(x)
+            encoded = torch.cdist(x, self.prototypes, p = 2)
+            encoded = torch.where(encoded > self.r, 1, -1).type(torch.float)
 
         return encoded
 
