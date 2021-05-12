@@ -19,20 +19,6 @@ class hd_rp_encoder(nn.Module):
 
         return x
 
-'''
-  def to(self, *args, **kwargs):
-    self = super().to(*args, **kwargs) 
-    self.weights = self.weights.to(*args, **kwargs) 
-    return self
-'''
-   
-'''
-cuda_check = x.is_cuda
-            if cuda_check:
-                cuda_device = x.get_device()
-                encoded = encoded.to(cuda_device)
-'''
-
 class hdsign(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input_):
@@ -66,70 +52,42 @@ class hd_rp_layer(nn.Module):
 
         return out
 
+
 class pact_actvn(torch.autograd.Function):
     '''
-    This code has been taken from:
+    Code for the pact activation was taken from
     https://github.com/KwangHoonAn/PACT
     '''
-	@staticmethod
-	def forward(ctx, x, alpha, k):
-		ctx.save_for_backward(x, alpha)
-		#y_1 = 0.5 * ( torch.abs(x) - torch.abs(x - alpha) + alpha )
-		y = torch.clamp(x, min = 0, max = alpha.item())
-		scale = (2**k - 1) / alpha
-		y_q = torch.round( y * scale) / scale
-		return y_q
+    @staticmethod
+    def forward(ctx, x, alpha, k):
+        ctx.save_for_backward(x, alpha)
+        #y_1 = 0.5 * (torch.abs(x) - torch.abs(x - alpha) + alpha)
+        y = torch.clamp(x, min = 0, max = alpha.item())
+        scale = (2 ** k - 1) / alpha
+        y_q = torch.round(y * scale) / scale
 
-	@staticmethod
-	def backward(ctx, dLdy_q):
-		# Backward function, I borrowed code from
-		# https://github.com/obilaniu/GradOverride/blob/master/functional.py
-		# We get dL / dy_q as a gradient
-		x, alpha, = ctx.saved_tensors
-		# Weight gradient is only valid when [0, alpha]
-		# Actual gradient for alpha,
-		# By applying Chain Rule, we get dL / dy_q * dy_q / dy * dy / dalpha
-		# dL / dy_q = argument,  dy_q / dy * dy / dalpha = 0, 1 with x value range 
-		lower_bound      = x < 0
-		upper_bound      = x > alpha
-		# x_range       = 1.0-lower_bound-upper_bound
-		x_range = ~(lower_bound|upper_bound)
-		grad_alpha = torch.sum(dLdy_q * torch.ge(x, alpha).float()).view(-1)
-		return dLdy_q * x_range.float(), grad_alpha, None
-
-class id_lvl_encoder(nn.Module):
-    def __init__(self, id_hvs, lvl_hvs, qbins, bin_len):
-        super().__init__()
-        self.id_hvs = id_hvs
-        self.lvl_hvs = lvl_hvs
-        self.qbins = qbins
-        self.bin_len = bin_len
-        self.flat = nn.Flatten()
+        return y_q
     
-    def forward(self, x):
-        x = self.flat(x)
-        idx = torch.floor(x / self.bin_len).type(torch.long)
-        encoded = (self.lvl_hvs[idx] * self.id_hvs).sum(dim=1)
-        encoded = torch.clamp(encoded, -1, 1)
-        
-        return encoded
+    @staticmethod
+    def backward(ctx, dLdy_q):
+        # Backward function, I borrowed code from
+        # https://github.com/obilaniu/GradOverride/blob/master/functional.py 
+        # We get dL / dy_q as a gradient
+        x, alpha, = ctx.saved_tensors
+        # Weight gradient is only valid when [0, alpha] 
+        # Actual gradient for alpha,
+        # By applying Chain Rule, we get dL / dy_q * dy_q / dy * dy / dalpha
+        # dL / dy_q = argument,  dy_q / dy * dy / dalpha = 0, 1 with x value range 
+        lower_bound      = x < 0
+        upper_bound      = x > alpha
+        # x_range       = 1.0-lower_bound-upper_bound
+        x_range = ~(lower_bound|upper_bound)
+        grad_alpha = torch.sum(dLdy_q * torch.ge(x, alpha).float()).view(-1)
 
+        return dLdy_q * x_range.float(), grad_alpha, None
 
-class id_lvl_decoder(nn.Module):
-    def __init__(self, id_hvs, lvl_hvs, bin_len):
-        super().__init__()
-        self.id_hvs = id_hvs
-        self.lvl_hvs = lvl_hvs
-        self.bin_len = bin_len
-      
-    def forward(self, x):
-        decoded = x.repeat(1, self.id_hvs.shape[0]).view(x.shape[0], self.id_hvs.shape[0], x.shape[1]) * self.id_hvs
-        decoded = torch.matmul(decoded, self.lvl_hvs.transpose(0,1)).max(dim=2)[1] * self.bin_len
-            
-        return decoded
-
-class hd_id_lvl_layer(nn.Module):
-    def __init__(self, nfeats, D, pact=True, k=3, qbins=8, max_val = None, min_val = None):
+class hd_id_lvl_encoder(nn.Module):
+    def __init__(self, nfeats, D, qbins = 16, pact=True, k=3, max_val = None, min_val = None):
         super().__init__()
         self.nfeats = nfeats
         self.D = D
@@ -138,18 +96,17 @@ class hd_id_lvl_layer(nn.Module):
         if pact:
             self.k = k
             self.alpha = nn.Parameter(torch.tensor(2.0))
-            maxval = 2 ** k
-            minval = 0
+            self.maxval = 2 ** k
+            self.minval = 0
+            self.activn = pact_actvn.apply
         else:
             assert max_val is not None
             assert min_val is not None
 
-            maxval = max_val
-            minval = min_val
-            
-            self.activ = pact_actvn.apply
+            self.maxval = max_val
+            self.minval = min_val
 
-        self.bin_len = (maxval - minval) / (qbins - 1)
+        self.bin_len = (self.maxval - self.minval) / qbins
         self.qbins = torch.tensor(qbins)
         
         #### Generate ID hypervectors
@@ -171,15 +128,51 @@ class hd_id_lvl_layer(nn.Module):
           lvl_hvs.append(list(temp))
         lvl_hvs = torch.tensor(lvl_hvs).type(torch.float)
         self.lvl_hvs = nn.Parameter(lvl_hvs, requires_grad = False)
+        self.flat = nn.Flatten()
+    
+    def forward(self, x):
+        x = self.flat(x)
+        x = x.clamp(self.minval, self.maxval)
+        
+        if self.pact:
+            x = self.activn(x, self.alpha, self.k)
 
-        self.encoder = id_lvl_encoder(self.id_hvs, self.lvl_hvs, self.qbins, self.bin_len)
+        idx = (x // self.bin_len).type(torch.long)
+        encoded = (self.lvl_hvs[idx] * self.id_hvs).sum(dim=1)
+        encoded = torch.clamp(encoded, -1, 1)
+        
+        return encoded
+
+
+class hd_id_lvl_decoder(nn.Module):
+    def __init__(self, id_hvs, lvl_hvs, bin_len):
+        super().__init__()
+        self.id_hvs = id_hvs
+        self.lvl_hvs = lvl_hvs
+        self.bin_len = bin_len
+      
+    def forward(self, x):
+        decoded = x.repeat(1, self.id_hvs.shape[0]).view(x.shape[0], self.id_hvs.shape[0], x.shape[1]) * self.id_hvs
+        decoded = torch.matmul(decoded, self.lvl_hvs.transpose(0,1)).max(dim=2)[1] * self.bin_len
+            
+        return decoded
+
+class hdcodec(nn.Module):
+    def __init__(self, nfeats, D, pact=True, k=3, qbins=8, max_val = None, min_val = None):
+        super().__init__()
+        self.encoder = hd_id_lvl_encoder(nfeats, D, qbins, pact, k, max_val, min_val)
+        self.decoder = hd_id_lvl_decoder(
+            self.encoder.id_hvs, self.encoder.lvl_hvs, self.encoder.bin_len
+        )
     
     def forward(self, x):
         out = self.encoder(x)
-        
+        out = self.decoder(out)
+
         return out
 
-class hd_learner(nn.Module):
+
+class hd_classifier(nn.Module):
     def __init__(self, nclasses, D, alpha = 1.0):
         super().__init__()
         self.class_hvs = nn.Parameter(torch.zeros(size=(nclasses, D)), requires_grad = False)
@@ -193,7 +186,6 @@ class hd_learner(nn.Module):
             _, preds = scores.max(dim=1)
 
             for label in range(self.nclasses):
-                #print(targets != preds, targets == label)
                 if label in targets:
                     incorrect = encoded[torch.bitwise_and(targets != preds, targets == label)]
                     incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze() * self.alpha
@@ -205,55 +197,6 @@ class hd_learner(nn.Module):
         
         return scores
 
-
-class hdcodec(nn.Module):
-    def __init__(self, nfeats, D, pact=True, k=3, qbins=8, max_val = None, min_val = None):
-        super().__init__()
-        self.nfeats = nfeats
-        self.D = D
-        self.k = k
-
-        if pact:
-            self.k = k
-            maxval = 2 ** k
-            minval = 0
-        else:
-            assert max_val is not None
-            assert min_val is not None
-
-            maxval = max_val
-            minval = min_val
-
-        self.bin_len = (maxval - minval) / qbins
-        self.qbins = torch.tensor(qbins)
-        
-        temp = torch.rand(size=(nfeats, D))
-        temp = torch.where(temp > 0.5, 1, -1)
-        self.id_hvs = nn.Parameter(temp.type(torch.float), requires_grad = False)
-
-        lvl_hvs = []
-        temp = [-1]*int(D/2) + [1]*int(D/2)
-        np.random.shuffle(temp)
-        lvl_hvs.append(temp)
-        change_list = np.arange(0, D)
-        np.random.shuffle(change_list)
-        cnt_toChange = math.floor(D/2 / (qbins-1))
-        for i in range(1, qbins):
-          temp = np.array(lvl_hvs[i-1])
-          temp[change_list[(i-1)*cnt_toChange : i*cnt_toChange]] = -temp[change_list[(i-1)*cnt_toChange : i*cnt_toChange]]
-          lvl_hvs.append(list(temp))
-
-        lvl_hvs = torch.tensor(lvl_hvs).type(torch.float)
-        self.lvl_hvs = nn.Parameter(lvl_hvs, requires_grad = False)
-
-        self.encoder = id_lvl_encoder(self.id_hvs, self.lvl_hvs, self.qbins, self.bin_len)
-        self.decoder = id_lvl_decoder(self.id_hvs, self.lvl_hvs, self.bin_len)
-    
-    def forward(self, x):
-        out = self.encoder(x)
-        out = self.decoder(out)
-
-        return out
 
 class hd_skc_layer(nn.Module):
     def __init__(self, nfeats, D, r, mean = 0.0, std = 1.0):
@@ -276,10 +219,10 @@ class hd_skc_layer(nn.Module):
 
 if __name__ == '__main__':
   testdata = torch.tensor([[0, 4, 1, 3, 0]]).cuda()
-  model = hdcodec(nfeats=5, D=10000)
+  model = hdcodec(nfeats=5, D=10000, qbins = 9)
   out = model(testdata)
   print(testdata, out)
 
-  model = hdcodec(nfeats=5, D=10000, pact=False, max_val = 8, min_val = 0)
+  model = hdcodec(nfeats=5, D=10000, pact=False, qbins = 8, max_val = 8, min_val = 0)
   out = model(testdata)
   print(testdata, out)
