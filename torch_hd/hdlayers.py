@@ -179,8 +179,11 @@ class hd_classifier(nn.Module):
         self.nclasses = nclasses
         self.alpha = alpha
     
-    def forward(self, encoded, targets):
+    def forward(self, encoded, targets = None):
         scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
+
+        if targets is None:
+            return scores
 
         if self.training:
             _, preds = scores.max(dim=1)

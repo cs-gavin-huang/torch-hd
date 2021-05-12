@@ -26,7 +26,7 @@ def hd_argparser():
     parser.add_argument('-e', '--nepochs', type = int, default = 10, help = '# training epochs')
     parser.add_argument('-d', '--device', type = str, default = 'cuda', help = 'device to run on')
     parser.add_argument('-b', '--batch_size', type = int, default = 512, help = 'batch size')
-    parser.add_argument('-w', '--nworkers', type = int, default = 8, help = 'number of workers for the dataloader')
+    parser.add_argument('-w', '--nworkers', type = int, default = 2, help = 'number of workers for the dataloader')
     parser.add_argument('-a', '--algo', type = str, default = 'rp', help = 'HD encoding algorithm')
     parser.add_argument('-q', '--qbins', type = int, default = 8, help = '# of quantizer bins')
     parser.add_argument('-r', '--radius', type = float, default = 2.5, help = 'radius for skc')
