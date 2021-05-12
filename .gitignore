@@ -1,5 +1,5 @@
 build/
 dist/
-torch_gists.egg-info/
-torch_gist
+torch_hd.egg-info/
+torch_hd
 __pycache__
