@@ -45,25 +45,6 @@ class hdsign(torch.autograd.Function):
 
         return ret
 
-class hd_rp_layer(nn.Module):
-    def __init__(self, size_in, D=5000, p =0.5, quantize = True):
-        super().__init__()
-        self.encoder = hd_rp_encoder(size_in, D, p)
-        self.quantize = quantize
-    
-    def forward(self, x):
-        out = self.encoder(x)
-
-        if self.quantize:
-            out = torch.sign(out)
-        else:
-            if self.training:
-                out = nn.Tanh(out)
-            else:
-                out = torch.sign(out)
-
-        return out
-
 
 class pact_actvn(torch.autograd.Function):
     '''
@@ -211,14 +192,13 @@ class hd_classifier(nn.Module):
                 _, preds = scores.max(dim=1)
 
                 for label in range(self.nclasses):
-                    if label in targets:
-                        incorrect = encoded[torch.bitwise_and(targets != preds, targets == label)]
-                        incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze() * self.alpha
-                        self.class_hvs[label] += incorrect #.clip(-1, 1)
+                    incorrect = encoded[torch.bitwise_and(targets != preds, targets == label)]
+                    incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze() * self.alpha
+                    self.class_hvs[label] += incorrect * self.alpha #.clip(-1, 1)
 
                     incorrect = encoded[torch.bitwise_and(targets != preds, preds == label)]
                     incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze()
-                    self.class_hvs[label] -= incorrect #.clip(-1, 1) * self.alpha
+                    self.class_hvs[label] -= incorrect * self.alpha #.clip(-1, 1) * self.alpha
         
         return scores
     

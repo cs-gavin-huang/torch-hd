@@ -33,7 +33,7 @@ def hd_argparser():
 
     return parser
 
-def train_hd(model, classifier, trainloader, nepochs=10, device='cpu'):
+def train_hd(model, classifier, trainloader, nepochs=10, device='cpu', mode='norm'):
     model = model.to(device)
     classifier = classifier.to(device)
     t = tqdm(range(len(trainloader)))
@@ -69,12 +69,15 @@ def train_hd(model, classifier, trainloader, nepochs=10, device='cpu'):
     
     t.close()
 
-    #classifier.class_hvs = nn.Parameter(classifier.class_hvs.clamp(-1, 1), requires_grad = False)
-    classifier.normalize_class_hvs()
+    if mode == 'norm':
+        classifier.normalize_class_hvs()
+    else:
+        classifier.class_hvs = nn.Parameter(classifier.class_hvs.clamp(-1, 1), requires_grad = False)
+
 
     return classifier
 
-def test_hd(model, classifier, testloader, device = 'cuda'):
+def test_hd(model, classifier, testloader, device = 'cuda', show_mistakes = False):
     classifier = classifier.to(device)
 
     classifier.eval()
@@ -110,7 +113,9 @@ def test_hd(model, classifier, testloader, device = 'cuda'):
 
     print("---------------------------------")
     print("Test accuracy: {}".format(overall_acc))
-    print("#Mistakes by class:")
-    for label in range(nclasses):
-        print("class {}: {}".format(label, mistakes[label]))
+
+    if show_mistakes:
+        print("#Mistakes by class:")
+        for label in range(nclasses):
+            print("class {}: {}".format(label, mistakes[label]))
     print("---------------------------------")
