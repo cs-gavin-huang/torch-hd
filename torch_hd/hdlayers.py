@@ -192,12 +192,13 @@ class hdcodec(nn.Module):
 
 
 class hd_classifier(nn.Module):
-    def __init__(self, nclasses, D, alpha = 1.0):
+    def __init__(self, nclasses, D, alpha = 1.0, clip = False):
         super().__init__()
         self.class_hvs = nn.Parameter(torch.zeros(size=(nclasses, D)), requires_grad = False)
         self.nclasses = nclasses
         self.alpha = alpha
         self.oneshot = False
+        self.clip = clip
     
     def forward(self, encoded, targets = None):
         scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
@@ -220,10 +221,14 @@ class hd_classifier(nn.Module):
                 for label in range(self.nclasses):
                     incorrect = encoded[torch.bitwise_and(targets != preds, targets == label)]
                     incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze() * self.alpha
+                    if self.clip:
+                        incorrect = incorrect.clip(-1, 1)
                     self.class_hvs[label] += incorrect * self.alpha #.clip(-1, 1)
 
                     incorrect = encoded[torch.bitwise_and(targets != preds, preds == label)]
                     incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze()
+                    if self.clip:
+                        incorrect = incorrect.clip(-1, 1)
                     self.class_hvs[label] -= incorrect * self.alpha #.clip(-1, 1) * self.alpha
         
         return scores

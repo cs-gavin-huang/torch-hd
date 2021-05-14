@@ -5,6 +5,7 @@ import torch.nn as nn
 from torchmetrics.functional import accuracy
 from torch.utils.data import TensorDataset, DataLoader
 import argparse
+import copy
 
 def load_data(filepath):
 
@@ -33,24 +34,31 @@ def hd_argparser():
 
     return parser
 
-def train_hd(model, classifier, trainloader, nepochs=10, device='cpu', mode='norm'):
+def train_hd(model, classifier, trainloader, nepochs=10, device='cuda', mode='norm', valloader=None):
     model = model.to(device)
     classifier = classifier.to(device)
     t = tqdm(range(len(trainloader)))
 
-    classifier.train()
-
     epoch_acc = 0
     sparsity = 0.0
+    val_acc = 0.0
+    best_acc = -float("inf")
+    best_model = classifier.state_dict()
 
     for epoch in range(nepochs):
         overall_acc = 0.0
         overall_sum = 0.0
 
+        classifier.train()
+
         for idx, batch in enumerate(trainloader):
-            t.set_description('Epoch {} train_acc: {}'.format(epoch, epoch_acc))
+            if valloader is None:
+                t.set_description('Epoch {} train_acc: {}'.format(epoch, epoch_acc))
+            else:
+                t.set_description('Epoch {} train_acc: {} val_acc: {}'.format(epoch, epoch_acc, val_acc))
+
             x, y = batch
-            x = x.to(device)
+            x = x.to(device).squeeze()
             y = y.to(device)
 
             x = model(x)
@@ -63,19 +71,58 @@ def train_hd(model, classifier, trainloader, nepochs=10, device='cpu', mode='nor
         
         overall_acc /= (idx + 1)
         epoch_acc = overall_acc
-        t.set_description('Epoch {} train_acc: {}'.format(epoch, epoch_acc))
+
+        if valloader is not None:
+            val_acc = predict(model, classifier, valloader, device)
+            t.set_description('Epoch {} train_acc: {} val_acc: {}'.format(epoch, epoch_acc, val_acc))
+            if val_acc > best_acc:
+                best_acc = val_acc
+                best_model = copy.deepcopy(classifier.state_dict())
+        else:
+            t.set_description('Epoch {} train_acc: {}'.format(epoch, epoch_acc))
+
         t.refresh()
         t.reset()
     
     t.close()
 
+    classifier.load_state_dict(best_model)
+
     if mode == 'norm':
         classifier.normalize_class_hvs()
-    else:
+    elif mode == 'clip':
         classifier.class_hvs = nn.Parameter(classifier.class_hvs.clamp(-1, 1), requires_grad = False)
+    else:
+        pass
 
 
     return classifier
+
+def predict(model, classifier, dataloader, device='cuda'):
+    classifier = classifier.to(device)
+
+    classifier.eval()
+    nclasses = classifier.class_hvs.shape[0]
+    overall_acc = 0.0
+
+    for idx, batch in enumerate(dataloader):
+        x, y = batch
+        x = x.to(device).squeeze()
+        y = y.to(device)
+
+        encoded = model(x)
+        scores = classifier(encoded, y)
+        _, preds = torch.max(scores, dim = 1)
+
+        acc = accuracy(preds, y)
+        overall_acc += acc.cpu().item()
+
+    
+    overall_acc /= (idx + 1)
+    
+    return overall_acc
+
+
 
 def test_hd(model, classifier, testloader, device = 'cuda', show_mistakes = False):
     classifier = classifier.to(device)
@@ -91,12 +138,12 @@ def test_hd(model, classifier, testloader, device = 'cuda', show_mistakes = Fals
 
     for idx, batch in enumerate(testloader):
         x, y = batch
-        x = x.to(device)
+        x = x.to(device).squeeze()
         y = y.to(device)
 
         encoded = model(x)
-        scores = classifier(encoded, y)
-        _, preds = scores.max(dim = 1)
+        scores = classifier(encoded)
+        _, preds = torch.max(scores, dim = 1)
 
         acc = accuracy(preds, y)
         overall_acc += acc.cpu().item()
