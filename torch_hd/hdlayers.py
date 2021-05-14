@@ -31,6 +31,32 @@ class hd_rp_encoder(nn.Module):
 
         return out
 
+class hd_rp_channel_encoder(nn.Module):
+    def __init__(self, size_in, D=5000, p = 0.5, quantize = True):
+        super().__init__()
+        self.dim = D
+        self.quantize = quantize
+        self.h, self.w = size_in
+    
+        probs = torch.ones((self.w, D)) * p
+        projection = 2 * torch.bernoulli(probs) - 1
+        self.hdweights = nn.Parameter(projection, requires_grad = False)
+        self.tan_actvn = nn.Tanh()
+
+    def forward(self, x):
+        out = torch.matmul(x, self.hdweights.detach())
+        out = torch.sum(out, dim = 1)
+
+        if self.quantize:
+            out = torch.sign(out)
+        else:
+            if self.training:
+                out = self.tan_actvn(out)
+            else:
+                out = torch.sign(out)
+
+        return out
+
 class hdsign(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input_):
@@ -235,3 +261,8 @@ if __name__ == '__main__':
   model = hdcodec(nfeats=5, D=10000, pact=False, qbins = 8, max_val = 8, min_val = 0)
   out = model(testdata)
   print(testdata, out)
+
+  testdata = torch.rand(size = (100, 13, 81))
+  model = hd_rp_channel_encoder(size_in = (13, 81))
+  out = model(testdata)
+  print(out.shape)
