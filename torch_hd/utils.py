@@ -69,7 +69,8 @@ def train_hd(model, classifier, trainloader, nepochs=10, device='cpu'):
     
     t.close()
 
-    classifier.class_hvs = nn.Parameter(classifier.class_hvs.clamp(-1, 1), requires_grad = False)
+    #classifier.class_hvs = nn.Parameter(classifier.class_hvs.clamp(-1, 1), requires_grad = False)
+    classifier.normalize_class_hvs()
 
     return classifier
 

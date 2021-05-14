@@ -15,6 +15,7 @@ class hd_rp_encoder(nn.Module):
         projection = torch.where(rand_proj > 0.5, 1, -1).type(torch.float)
         self.hdweights = nn.Parameter(projection, requires_grad=False)
         self.flat = nn.Flatten()
+        self.tan_actvn = nn.Tanh()
   
     def forward(self, x):
         x = self.flat(x)
@@ -24,7 +25,7 @@ class hd_rp_encoder(nn.Module):
             out = torch.sign(out)
         else:
             if self.training:
-                out = nn.Tanh(out)
+                out = self.tan_actvn(out)
             else:
                 out = torch.sign(out)
 
@@ -189,11 +190,20 @@ class hd_classifier(nn.Module):
         self.class_hvs = nn.Parameter(torch.zeros(size=(nclasses, D)), requires_grad = False)
         self.nclasses = nclasses
         self.alpha = alpha
+        self.oneshot = False
     
     def forward(self, encoded, targets = None):
         scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
 
         with torch.no_grad():
+            if not self.oneshot:
+                self.oneshot = True
+                for label in range(self.nclasses):
+                    if label in targets:
+                        self.class_hvs[label] += torch.sum(encoded[targets == label], dim = 0, keepdim = True).squeeze()
+
+                return scores
+
             if targets is None:
                 return scores
 
@@ -204,13 +214,17 @@ class hd_classifier(nn.Module):
                     if label in targets:
                         incorrect = encoded[torch.bitwise_and(targets != preds, targets == label)]
                         incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze() * self.alpha
-                        self.class_hvs[label] += incorrect.clip(-1, 1)
+                        self.class_hvs[label] += incorrect #.clip(-1, 1)
 
                     incorrect = encoded[torch.bitwise_and(targets != preds, preds == label)]
                     incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze()
-                    self.class_hvs[label] -= incorrect.clip(-1, 1) * self.alpha
+                    self.class_hvs[label] -= incorrect #.clip(-1, 1) * self.alpha
         
         return scores
+    
+    def normalize_class_hvs(self):
+        for idx in range(self.class_hvs.shape[0]):
+            self.class_hvs[idx] /= torch.linalg.norm(self.class_hvs[idx])
 
 
 class hd_skc_layer(nn.Module):
