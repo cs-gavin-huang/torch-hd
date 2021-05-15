@@ -192,13 +192,17 @@ class hdcodec(nn.Module):
 
 
 class hd_classifier(nn.Module):
-    def __init__(self, nclasses, D, alpha = 1.0, clip = False):
+    def __init__(self, nclasses, D, alpha = 1.0, clip = False, cdt = False, k = 10, p=0.5):
         super().__init__()
         self.class_hvs = nn.Parameter(torch.zeros(size=(nclasses, D)), requires_grad = False)
         self.nclasses = nclasses
         self.alpha = alpha
         self.oneshot = False
         self.clip = clip
+        self.cdt = cdt
+        self.D = D
+        self.cdt_k = k
+        self.p = p
     
     def forward(self, encoded, targets = None):
         scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
@@ -221,16 +225,29 @@ class hd_classifier(nn.Module):
                 for label in range(self.nclasses):
                     incorrect = encoded[torch.bitwise_and(targets != preds, targets == label)]
                     incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze() * self.alpha
+
                     if self.clip:
                         incorrect = incorrect.clip(-1, 1)
+
                     self.class_hvs[label] += incorrect * self.alpha #.clip(-1, 1)
 
                     incorrect = encoded[torch.bitwise_and(targets != preds, preds == label)]
                     incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze()
+
                     if self.clip:
                         incorrect = incorrect.clip(-1, 1)
+
                     self.class_hvs[label] -= incorrect * self.alpha #.clip(-1, 1) * self.alpha
-        
+
+
+                sparsity = torch.sum(self.class_hvs.detach()) / (self.class_hvs[0] * self.class_hvs[1])
+                if self.cdt and b_sparsity > self.p:
+                    while(sparisty > self.p):
+                        perm = torch.randperm(self.D)
+                        permuted = incorrect[perm]
+                        incorrect += permuted * orig 
+                        sparsity = torch.sum(self.class_hvs.detach()) / (self.class_hvs[0] * self.class_hvs[1])
+
         return scores
     
     def normalize_class_hvs(self):
