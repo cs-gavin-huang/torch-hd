@@ -156,7 +156,7 @@ class hd_id_lvl_encoder(nn.Module):
         if self.pact:
             x = self.activn(x, self.alpha, self.k)
 
-        idx = (x // self.bin_len).type(torch.long)
+        idx = torch.floor(x / self.bin_len).type(torch.long)
         encoded = (self.lvl_hvs.detach()[idx] * self.id_hvs.detach()).sum(dim=1)
         encoded = torch.clamp(encoded, -1, 1)
         
