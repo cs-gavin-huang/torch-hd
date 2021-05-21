@@ -106,7 +106,7 @@ class pact_actvn(torch.autograd.Function):
         return dLdy_q * x_range.float(), grad_alpha, None
 
 class hd_id_lvl_encoder(nn.Module):
-    def __init__(self, nfeats, D, qbins = 16, pact=True, k=3, max_val = None, min_val = None):
+    def __init__(self, nfeats, D, qbins = 16, pact=True, k=3, max_val = None, min_val = None, sparsity = 0.5):
         super().__init__()
         self.nfeats = nfeats
         self.D = D
@@ -135,7 +135,8 @@ class hd_id_lvl_encoder(nn.Module):
 
         #### Generate Level hypervector
         lvl_hvs = []
-        temp = [-1]*int(D/2) + [1]*int(D/2)
+        #temp = [-1]*int(D/2) + [1]*int(D/2)
+        temp = [1] * int(D * sparsity) + [-1] * int(D * (1 - sparsity))
         np.random.shuffle(temp)
         lvl_hvs.append(temp)
         change_list = np.arange(0, D)
