@@ -106,11 +106,14 @@ class pact_actvn(torch.autograd.Function):
         return dLdy_q * x_range.float(), grad_alpha, None
 
 class hd_id_lvl_encoder(nn.Module):
-    def __init__(self, nfeats, D, qbins = 16, pact=True, k=3, max_val = None, min_val = None, sparsity = 0.5):
+    def __init__(self, nfeats, D, qbins = 16, pact=True, k=3, max_val = None, min_val = None, sparsity = 0.5, quant=False):
         super().__init__()
         self.nfeats = nfeats
         self.D = D
         self.pact = pact
+        self.quant = quant
+        self.k = k - 1
+        self.sparsity= sparsity
 
         if pact:
             self.k = k
@@ -125,12 +128,15 @@ class hd_id_lvl_encoder(nn.Module):
             self.maxval = max_val
             self.minval = min_val
 
+
         self.bin_len = (self.maxval - self.minval) / qbins
         self.qbins = torch.tensor(qbins)
+        intervals = torch.arange(self.minval, self.maxval, self.bin_len)
+        self.intervals = nn.Parameter(intervals, requires_grad = False)
         
         #### Generate ID hypervectors
-        temp = torch.rand(size=(nfeats, D))
-        temp = torch.where(temp > 0.5, 1, -1)
+        temp = torch.ones(size=(nfeats, D)) * sparsity
+        temp = 2 * torch.bernoulli(temp) - 1
         self.id_hvs = nn.Parameter(temp.type(torch.float), requires_grad = False)
 
         #### Generate Level hypervector
@@ -141,8 +147,8 @@ class hd_id_lvl_encoder(nn.Module):
         lvl_hvs.append(temp)
         change_list = np.arange(0, D)
         np.random.shuffle(change_list)
-        cnt_toChange = math.floor(D/2 / (qbins-1))
-        for i in range(1, qbins):
+        cnt_toChange = math.floor(D/2 / (qbins))
+        for i in range(1, qbins + 1):
           temp = np.array(lvl_hvs[i-1])
           temp[change_list[(i-1)*cnt_toChange : i*cnt_toChange]] = -temp[change_list[(i-1)*cnt_toChange : i*cnt_toChange]]
           lvl_hvs.append(list(temp))
@@ -157,32 +163,43 @@ class hd_id_lvl_encoder(nn.Module):
         if self.pact:
             x = self.activn(x, self.alpha, self.k)
 
-        idx = torch.floor(x / self.bin_len).type(torch.long)
+        #idx = torch.floor(x / self.bin_len).type(torch.long)
+        idx = torch.searchsorted(self.intervals.detach(), x)
         encoded = (self.lvl_hvs.detach()[idx] * self.id_hvs.detach()).sum(dim=1)
-        encoded = torch.clamp(encoded, -1, 1)
+        if self.quant:
+            val = torch.tensor(2 ** self.k)
+            encoded = torch.clamp(encoded, -val, val-1)
+        else:
+            encoded = torch.clamp(encoded, -1, 1)
+            ones = torch.ones_like(encoded) * self.sparsity
+            ones = 2 * torch.bernoulli(ones) - 1
+            encoded[encoded == 0] = ones[encoded == 0]
         
         return encoded
 
 
 class hd_id_lvl_decoder(nn.Module):
-    def __init__(self, id_hvs, lvl_hvs, bin_len):
+    def __init__(self, id_hvs, lvl_hvs, bin_len, min_val, max_val):
         super().__init__()
         self.id_hvs = id_hvs
         self.lvl_hvs = lvl_hvs
         self.bin_len = bin_len
+        self.minval = min_val
+        self.maxval = max_val
       
     def forward(self, x):
         decoded = x.repeat(1, self.id_hvs.shape[0]).view(x.shape[0], self.id_hvs.shape[0], x.shape[1]) * self.id_hvs.detach()
-        decoded = torch.matmul(decoded, self.lvl_hvs.detach().transpose(0,1)).max(dim=2)[1] * self.bin_len
+        decoded = self.minval + torch.matmul(decoded, self.lvl_hvs.detach().transpose(0,1)).max(dim=2)[1] * self.bin_len
             
         return decoded
 
 class hdcodec(nn.Module):
-    def __init__(self, nfeats, D, pact=True, k=3, qbins=8, max_val = None, min_val = None):
+    def __init__(self, nfeats, D, pact=True, k=3, qbins=8, max_val = None, min_val = None, quant=False):
         super().__init__()
-        self.encoder = hd_id_lvl_encoder(nfeats, D, qbins, pact, k, max_val, min_val)
+        self.encoder = hd_id_lvl_encoder(nfeats, D, qbins, pact, k, max_val, min_val, quant = quant)
         self.decoder = hd_id_lvl_decoder(
-            self.encoder.id_hvs, self.encoder.lvl_hvs, self.encoder.bin_len
+            self.encoder.id_hvs, self.encoder.lvl_hvs, self.encoder.bin_len,
+            self.encoder.minval, self.encoder.maxval
         )
     
     def forward(self, x):
@@ -278,10 +295,12 @@ class hd_skc_layer(nn.Module):
 if __name__ == '__main__':
   testdata = torch.tensor([[0, 4, 1, 3, 0]]).cuda()
   model = hdcodec(nfeats=5, D=10000, qbins = 9)
+  model.cuda()
   out = model(testdata)
   print(testdata, out)
 
   model = hdcodec(nfeats=5, D=10000, pact=False, qbins = 8, max_val = 8, min_val = 0)
+  model.cuda()
   out = model(testdata)
   print(testdata, out)
 
