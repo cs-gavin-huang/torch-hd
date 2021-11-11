@@ -17,6 +17,8 @@ This section provides the API reference for the various HDC encoding methods.
 
 ## Random Projection Encoder
 
+<div class="code-example" markdown=1>
+
 ```python
 torch_hd.hdlayers.RandomProjectionEncoder(dim_in, D = 5000, p = 0.5, dist = 'normal',
 	mean = 0.0, std = 1.0, quantize = True)
@@ -32,15 +34,13 @@ The method expects an input in the form of `M x N` where `M` is the number of da
 and `N` is the number of features in each data point.
 
 ### Parameters
-- **dim_in** (int{: .text-purple-200 }) - the number of input features (`N`)
+- **dim_in**{: .text-blue-100 } (*int*{: .text-purple-200 }) - the number of input features (`N`)
 - **D**{: .text-blue-100 } (*int*{: .text-purple-200 }) - The dimensionality of the hypervector. Default: 5000
-- **p** (float{: .text-purple-200 }) - If `dist` is `bernoulli` this defines the probability. If `dist` is `normal` then this is the threshold for quantization if `quantize` is set to `True`. This parameter is ignored for non-quantized calls.
-- **dist** (string{: .text-purple-200 }) - `'normal', 'bernoulli'`. This sets the distribution from which to sample the projection matrix from. Default: `'normal'`
-- **mean** (float{: .text-purple-200 }) - The mean to be used for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
-- **std** (float{: .text-purple-200 }) - The standard deviation for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
-- **quantize** (bool{: .text-purple-200 }) - Whether to quantize the projection matrix and the output or not. If set to `True`, all values are quantized to `{1, -1}`
+- **p**{: .text-blue-100 } (*float*{: .text-purple-200 }) - If `dist` is `bernoulli` this defines the probability. If `dist` is `normal` then this is the threshold for quantization if `quantize` is set to `True`. This parameter is ignored for non-quantized calls.
+- **dist**{: .text-blue-100 } (*string*{: .text-purple-200 }) - `'normal', 'bernoulli'`. This sets the distribution from which to sample the projection matrix from. Default: `'normal'`
+- **mean**{: .text-blue-100 } (*float*{: .text-purple-200 }) - The mean to be used for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
+- **std**{: .text-blue-100 } (*float*{: .text-purple-200 }) - The standard deviation for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
+- **quantize**{: .text-blue-100 } (*bool*{: .text-purple-200 }) - Whether to quantize the projection matrix and the output or not. If set to `True`, all values are quantized to `{1, -1}`
 
-
----
 
 
