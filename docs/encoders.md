@@ -33,7 +33,7 @@ and `N` is the number of features in each data point.
 
 ### Parameters
 - **dim_in** (int{: .text-purple-200 }) - the number of input features (`N`)
-- **D** (int{: .text-purple-200 }) - The dimensionality of the hypervector. Default: 5000
+- **D** (*int*{: .text-purple-200 }) - The dimensionality of the hypervector. Default: 5000
 - **p** (float{: .text-purple-200 }) - If `dist` is `bernoulli` this defines the probability. If `dist` is `normal` then this is the threshold for quantization if `quantize` is set to `True`. This parameter is ignored for non-quantized calls.
 - **dist** (string{: .text-purple-200 }) - `'normal', 'bernoulli'`. This sets the distribution from which to sample the projection matrix from. Default: `'normal'`
 - **mean** (float{: .text-purple-200 }) - The mean to be used for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
