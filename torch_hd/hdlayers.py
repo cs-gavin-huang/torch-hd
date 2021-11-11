@@ -39,23 +39,18 @@ class RandomProjectionEncoder(nn.Module):
 
 class IDLevelEncoder(nn.Module):
     def __init__(self, dim_in, D, qbins = 16, max_val = None, min_val = None, 
-            sparsify = False, sparsity = None, quantize=False):
+            sparsity = 0.5, quantize = True):
         super().__init__()
         self.dim_in = dim_in
         self.D = D
-        self.pact = pact
-        self.quant = quantize
         self.sparsity = sparsity
-        if sparsity is not None:
-            self.sparsity = 0.5
-        self.sparsify = sparsify
+        self.quantize = quantize
 
-        if quantize:
-            assert max_val is not None
-            assert min_val is not None
+        assert max_val is not None
+        assert min_val is not None
 
-            self.maxval = max_val
-            self.minval = min_val
+        self.maxval = max_val
+        self.minval = min_val
 
 
         self.bin_len = (self.maxval - self.minval) / qbins
@@ -92,15 +87,11 @@ class IDLevelEncoder(nn.Module):
         #idx = torch.floor(x / self.bin_len).type(torch.long)
         idx = torch.searchsorted(self.intervals.detach(), x)
         encoded = (self.lvl_hvs.detach()[idx] * self.id_hvs.detach()).sum(dim=1)
-        if self.quant:
-            val = torch.tensor(2 ** self.nbits)
-            encoded = torch.clamp(encoded, -val, val)
-        else:
+        if self.quantize:
             encoded = torch.clamp(encoded, -1, 1)
-            if self.sparsify:
-                ones = torch.ones_like(encoded) * self.sparsity
-                ones = 2 * torch.bernoulli(ones) - 1
-                encoded[encoded == 0] = ones[encoded == 0]
+            ones = torch.ones_like(encoded) * self.sparsity
+            ones = 2 * torch.bernoulli(ones) - 1
+            encoded[encoded == 0] = ones[encoded == 0]
         
         return encoded
 
@@ -121,9 +112,9 @@ class IDLevelDecoder(nn.Module):
         return decoded
 
 class IDLevelCodec(nn.Module):
-    def __init__(self, dim_in, D, qbins=8, max_val = None, min_val = None, sparsify False, sparsity = None,  quantize=False):
+    def __init__(self, dim_in, D, qbins=8, max_val = None, min_val = None, sparsity = 0.5, quantize=True):
         super().__init__()
-        self.encoder = IDLevelEncoder(dim_in, D, qbins, max_val, min_val, sparsify, sparsity, quantize = quantize)
+        self.encoder = IDLevelEncoder(dim_in, D, qbins, max_val, min_val, sparsity, quantize)
         self.decoder = IDLevelDecoder(
             self.encoder.id_hvs, self.encoder.lvl_hvs, self.encoder.bin_len,
             self.encoder.minval, self.encoder.maxval
@@ -168,16 +159,74 @@ class pact_actvn(torch.autograd.Function):
 
         return dLdy_q * x_range.float(), grad_alpha, None
 
+class hd_classifier(nn.Module):
+    def __init__(self, nclasses, D, alpha = 1.0, clip = False, cdt = False, k = 10, sparsity=0.5):
+        super().__init__()
+        self.class_hvs = nn.Parameter(torch.zeros(size=(nclasses, D)), requires_grad = False)
+        self.nclasses = nclasses
+        self.alpha = alpha
+        self.oneshot = False
+        self.clip = clip
+        self.cdt = cdt
+        self.D = D
+        self.cdt_k = k
+        self.p = p
+    
+    def forward(self, encoded, targets = None):
+        scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
+
+        with torch.no_grad():
+            if not self.oneshot:
+                self.oneshot = True
+                for label in range(self.nclasses):
+                    if label in targets:
+                        self.class_hvs[label] += torch.sum(encoded[targets == label], dim = 0, keepdim = True).squeeze()
+
+                return scores
+
+            if targets is None:
+                return scores
+
+            if self.training:
+                _, preds = scores.max(dim=1)
+
+                for label in range(self.nclasses):
+                    incorrect = encoded[torch.bitwise_and(targets != preds, targets == label)]
+                    incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze() * self.alpha
+
+                    if self.clip:
+                        incorrect = incorrect.clip(-1, 1)
+ 
+                    self.class_hvs[label] += incorrect * self.alpha #.clip(-1, 1)
+
+                    incorrect = encoded[torch.bitwise_and(targets != preds, preds == label)]
+                    incorrect = incorrect.sum(dim = 0, keepdim = True).squeeze()
+
+                    if self.clip:
+                        incorrect = incorrect.clip(-1, 1)
+
+                    self.class_hvs[label] -= incorrect * self.alpha #.clip(-1, 1) * self.alpha
+
+
+                sparsity = torch.sum(self.class_hvs.detach()) / (self.class_hvs[0] * self.class_hvs[1])
+                if self.cdt and b_sparsity > self.p:
+                    while(sparisty > self.p):
+                        perm = torch.randperm(self.D)
+                        permuted = incorrect[perm]
+                        incorrect += permuted * orig 
+                        sparsity = torch.sum(self.class_hvs.detach()) / (self.class_hvs[0] * self.class_hvs[1])
+
+        return scores
+    
+    def normalize_class_hvs(self):
+        for idx in range(self.class_hvs.shape[0]):
+            self.class_hvs[idx] /= torch.linalg.norm(self.class_hvs[idx])
+
 
 
 if __name__ == '__main__':
     testdata = torch.tensor([[0, 4, 1, 3, 0]]).type(torch.float).cuda()
-    model = IDLevelCodec(dim_in=5, D=10000, pact=False, qbins = 8, max_val = 8, min_val = 0)
-    model.cuda()
-    out = model(testdata)
-    print(testdata, out)
-
-    model = IDLevelCodec(dim_in=5, D=10000, pact=True, qbins = 9)
+    model = IDLevelCodec(dim_in=5, D=10000, qbins = 8, max_val = 8, min_val = 0)
     model.cuda()
     out = model(testdata)
     print(testdata, out)

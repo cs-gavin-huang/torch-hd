@@ -21,10 +21,8 @@ This section provides the API reference for the various HDC encoding methods.
 
 
 <div class="code-example" markdown=1>
-#### *class torch_hd.hdlayers.RandomProjectionEncoder(dim_in, D = 5000, p = 0.5, dist = 'normal',*  
-{: .no_toc }
-#### *mean = 0.0, std = 1.0, quantize = True)*
-{: .no_toc }
+### *CLASS*{: .text-blue-300 } &nbsp;&nbsp; `torch_hd.hdlayers.RandomProjectionEncoder(dim_in, D = 5000, p = 0.5, `<br/> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;` dist = 'normal', mean = 0.0, std = 1.0, quantize = True)`
+{: .no_toc .fs-5 .text-blue-300 }
 </div>
 
 Applies the Random Projection Encoding method. The function creates a projection matrix
@@ -39,20 +37,21 @@ and `M` is the number of features in each data point.
 
 ### Parameters
 {: .no_toc }
-- **dim_in**{: .text-blue-100 } (*int*{: .text-purple-200 }) - the number of input features (`N`)
-- **D**{: .text-blue-100 } (*int*{: .text-purple-200 }) - The dimensionality of the hypervector. Default: 5000
-- **p**{: .text-blue-100 } (*float*{: .text-purple-200 }) - If `dist` is `bernoulli` this defines the probability. If `dist` is `normal` then this is the threshold for quantization if `quantize` is set to `True`. This parameter is ignored for non-quantized calls.
-- **dist**{: .text-blue-100 } (*string*{: .text-purple-200 }) - `'normal', 'bernoulli'`. This sets the distribution from which to sample the projection matrix from. Default: `'normal'`
-- **mean**{: .text-blue-100 } (*float*{: .text-purple-200 }) - The mean to be used for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
-- **std**{: .text-blue-100 } (*float*{: .text-purple-200 }) - The standard deviation for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
-- **quantize**{: .text-blue-100 } (*bool*{: .text-purple-200 }) - Whether to quantize the projection matrix and the output or not. If set to `True`, all values are quantized to `{1, -1}`
+- **dim_in**{: .text-blue-100 } (*`int`*{: .fs-5 .text-purple-200 }) - the number of input features (`N`)
+- **D**{: .text-blue-100 } (*`int`*{: .fs-5 .text-purple-200 }) - The dimensionality of the hypervector. Default: 5000
+- **p**{: .text-blue-100 } (*`float`*{: .fs-5 .text-purple-200 }) - If `dist` is `bernoulli` this defines the probability. If `dist` is `normal` then this is the threshold for quantization if `quantize` is set to `True`. This parameter is ignored for non-quantized calls.
+- **dist**{: .text-blue-100 } (*`string`*{: .fs-5 .text-purple-200 }) - `'normal', 'bernoulli'`. This sets the distribution from which to sample the projection matrix from. Default: `'normal'`
+- **mean**{: .text-blue-100 } (*`float`*{: .fs-5 .text-purple-200 }) - The mean to be used for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
+- **std**{: .text-blue-100 } (*`float`*{: .fs-5 .text-purple-200 }) - The standard deviation for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
+- **quantize**{: .text-blue-100 } (*`bool`*{: .fs-5 .text-purple-200 }) - Whether to quantize the projection matrix and the output or not. If set to `True`, all values are quantized to `{1, -1}`
 
 
 ### Shape
 {: .no_toc }
 
-- **input**{ .text-blue-100 }: `N x M`
-- **output**{ .text-blue-100 }: `N x D`
+- **input**{: .text-blue-100 }: `N x M` where `N` is the number of data points and `M` 
+is the number of features in each data point
+- **output**{: .text-blue-100 }: `N x D` `D` is the dimensionality of the hypervector
 
 </div>
 
@@ -65,9 +64,8 @@ and `M` is the number of features in each data point.
 
 
 <div class="code-example" markdown=1>
-#### class torch_hd.hdlayers.IDLevelEncoder(dim_in, D, qbins = 16, <br>  
-&nbsp;&nbsp; max_val = None, min_val = None, sparsify = False, sparsity = None, quantize=False)
-{: .no_toc }
+### *CLASS*{: .text-blue-300 } &nbsp;&nbsp; `torch_hd.hdlayers.IDLevelEncoder(dim_in, D, qbins = 16, max_val = None, `<br/> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;` min_val = None, sparsify = False, sparsity = None, quantize=False)`
+{: .no_toc .text-blue-300 }
 </div>
 
 This method implements the ID-level encoding scheme. Each feature is assigned a random
@@ -82,8 +80,15 @@ For more details about this method refer [Hyperdimensional Biosignal Processing:
 
 ### Parameters
 {: .no_toc }
-- **dim_in**{: .text-blue-100 } (*int*{: .text-purple-200 }) - the number of input features (`N`)
-- **D**{: .text-blue-100 } (*int*{: .text-purple-200 }) - The dimensionality of the hypervector. Default: 5000
+- **dim_in**{: .text-blue-100 } (*`int`*{: .fs-5 .text-purple-200 }) - the number of input features (`N`)
+- **D**{: .text-blue-100 } (*`int`*{: .fs-5 .text-purple-200 }) - The dimensionality of the hypervector. Default: 5000
+- **qbins**{: .text-blue-100 } (*`int`*{: .fs-5 .text-purple-200 }) - Number of quantization bins. This decides the level of quantization for each feature value
+- **max_val**{: .text-blue-100 } (*`float`*{: .fs-5 text-purple-200 }) - The maximum of all feature values. This is used for setting quantization limits
+- **min_val**{: .text-blue-100 } (*`float`*{: .fs-5 text-purple-200 }) - The minimum of all feature values. This is used for setting quantization limits
+- **sparsify**{: .text-blue-100 } (*`bool`*{: .fs-5 .text-purple-200 }) - Setting this flag will ensure that the hypervectors all have a fixed sparsity. 
+This prevents saturation of hypervectors.
+- **sparsity**{: .text-blue-100 } (*`float`*{: .fs-5 .text-purple-200 }) - When the `sparsify` flag is set, it maintains the sparsity of hypervectors to this value. Defaul: 0.5
+- **quantize**{: .text-blue-100 } (*`bool`*{: .fs-5 .text-purple-200 }) - Whether to quantize the hypervector or not. If set, the hypervectors are clipped to `{-1, 1}`
 
 
 ### Shape

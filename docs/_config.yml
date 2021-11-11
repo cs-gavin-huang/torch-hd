@@ -1,5 +1,5 @@
 title: "Torch-HD Docs"
-remote_theme: pmarsceill/just-the-docs
+theme: just-the-docs
 search_enabled: false
 
 aux_links:
