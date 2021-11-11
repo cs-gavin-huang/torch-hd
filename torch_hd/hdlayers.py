@@ -209,7 +209,7 @@ class hd_classifier(nn.Module):
 
 
                 sparsity = torch.sum(self.class_hvs.detach()) / (self.class_hvs[0] * self.class_hvs[1])
-                if self.cdt and b_sparsity > self.p:
+                if self.cdt and sparsity > self.p:
                     while(sparisty > self.p):
                         perm = torch.randperm(self.D)
                         permuted = incorrect[perm]
