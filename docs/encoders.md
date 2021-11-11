@@ -65,9 +65,8 @@ and `M` is the number of features in each data point.
 
 
 <div class="code-example" markdown=1>
-#### *class torch_hd.hdlayers.IDLevelEncoder(dim_in, D, qbins = 16, pact=False,*
-{: .no_toc }
-&nbsp;&nbsp; #### *nbits=3, max_val = None, min_val = None, sparsity = 0.5, quantize=False)*  
+#### class torch_hd.hdlayers.IDLevelEncoder(dim_in, D, qbins = 16, <br>  
+&nbsp;&nbsp; max_val = None, min_val = None, sparsify = False, sparsity = None, quantize=False)
 {: .no_toc }
 </div>
 
@@ -81,19 +80,10 @@ and their corresponding values (Level hypervectors) all of which are bundled tog
 
 For more details about this method refer [Hyperdimensional Biosignal Processing: A Case Study for EMG-based Hand Gesture Recognition](https://iis-people.ee.ethz.ch/~arahimi/papers/ICRC16.pdf)
 
-The method expects an input in the form of `N x M` where `N` is the number of data points
-and `M` is the number of features in each data point.
-
-
 ### Parameters
 {: .no_toc }
 - **dim_in**{: .text-blue-100 } (*int*{: .text-purple-200 }) - the number of input features (`N`)
 - **D**{: .text-blue-100 } (*int*{: .text-purple-200 }) - The dimensionality of the hypervector. Default: 5000
-- **p**{: .text-blue-100 } (*float*{: .text-purple-200 }) - If `dist` is `bernoulli` this defines the probability. If `dist` is `normal` then this is the threshold for quantization if `quantize` is set to `True`. This parameter is ignored for non-quantized calls.
-- **dist**{: .text-blue-100 } (*string*{: .text-purple-200 }) - `'normal', 'bernoulli'`. This sets the distribution from which to sample the projection matrix from. Default: `'normal'`
-- **mean**{: .text-blue-100 } (*float*{: .text-purple-200 }) - The mean to be used for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
-- **std**{: .text-blue-100 } (*float*{: .text-purple-200 }) - The standard deviation for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
-- **quantize**{: .text-blue-100 } (*bool*{: .text-purple-200 }) - Whether to quantize the projection matrix and the output or not. If set to `True`, all values are quantized to `{1, -1}`
 
 
 ### Shape
