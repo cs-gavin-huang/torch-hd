@@ -1,0 +1,10 @@
+title: "Torch-HD Docs"
+theme: just-the-docs
+search_enabled: false
+
+aux_links:
+    "Torch-HD on GitHub":
+        - "//github.com/rishikanthc/torch-hd"
+
+aux_links_new_tab: true
+heading_anchors: true

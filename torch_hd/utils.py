@@ -38,8 +38,8 @@ def hd_argparser():
 
     return parser
 
-def train_hd(model, classifier, trainloader, process_batch = None, nepochs=10, device='cuda', mode='norm', valloader=None):
-    model = model.to(device)
+def train_hd(encoder, classifier, trainloader, process_batch = None, nepochs=10, device='cuda', mode='norm', valloader=None):
+    model = encoder.to(device)
     classifier = classifier.to(device)
     t = tqdm(range(len(trainloader)))
 
@@ -134,7 +134,7 @@ def predict(model, classifier, dataloader, process_batch = None, device='cuda'):
 
 
 
-def test_hd(model, classifier, testloader,process_batch = None, device = 'cuda', show_mistakes = False, cm = False):
+def test_hd(encoder, classifier, testloader,process_batch = None, device = 'cuda', show_mistakes = False, cm = False):
     classifier = classifier.to(device)
 
     classifier.eval()
