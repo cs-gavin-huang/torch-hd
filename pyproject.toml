@@ -2,8 +2,5 @@
 requires = [
     "setuptools>=42",
     "wheel",
-    "torch",
-	"seaborn",
-	"scikit-learn"
 ]
 build-backend = "setuptools.build_meta"
