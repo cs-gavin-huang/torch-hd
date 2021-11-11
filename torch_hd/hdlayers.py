@@ -39,7 +39,7 @@ class RandomProjectionEncoder(nn.Module):
 
 class IDLevelEncoder(nn.Module):
     def __init__(self, dim_in, D, qbins = 16, max_val = None, min_val = None, 
-            nbits = 2, sparsify = False, sparsity = None, quantize=False):
+            sparsify = False, sparsity = None, quantize=False):
         super().__init__()
         self.dim_in = dim_in
         self.D = D
@@ -121,9 +121,9 @@ class IDLevelDecoder(nn.Module):
         return decoded
 
 class IDLevelCodec(nn.Module):
-    def __init__(self, dim_in, D, pact=True, nbits=3, qbins=8, max_val = None, min_val = None, quantize=False):
+    def __init__(self, dim_in, D, qbins=8, max_val = None, min_val = None, sparsify False, sparsity = None,  quantize=False):
         super().__init__()
-        self.encoder = IDLevelEncoder(dim_in, D, qbins, pact, nbits, max_val, min_val, quantize = quantize)
+        self.encoder = IDLevelEncoder(dim_in, D, qbins, max_val, min_val, sparsify, sparsity, quantize = quantize)
         self.decoder = IDLevelDecoder(
             self.encoder.id_hvs, self.encoder.lvl_hvs, self.encoder.bin_len,
             self.encoder.minval, self.encoder.maxval
