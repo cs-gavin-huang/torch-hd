@@ -19,8 +19,12 @@ This section provides the API reference for the various HDC encoding methods.
 
 <div class="code-example" markdown=1>
 
-### `torch_hd.hdlayers.RandomProjectionEncoder(dim_in, D = 5000, p = 0.5, dist = 'normal',
+<h3>
+```python
+torch_hd.hdlayers.RandomProjectionEncoder(dim_in, D = 5000, p = 0.5, dist = 'normal',
 	mean = 0.0, std = 1.0, quantize = True)`
+```
+</h3>
 
 
 Applies the Random Projection Encoding method. The function creates a projection matrix
@@ -32,6 +36,7 @@ For more details about this method refer [BRIC: Locality-based Encoding for Ener
 The method expects an input in the form of `M x N` where `M` is the number of data points
 and `N` is the number of features in each data point.
 
+---
 
 ### Parameters
 {: .no_toc }
