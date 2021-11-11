@@ -157,7 +157,7 @@ def test_hd(encoder, classifier, testloader,process_batch = None, device = 'cuda
         if process_batch is not None:
             x = process_batch(x)
 
-        encoded = model(x)
+        encoded = encoder(x)
         scores = classifier(encoded)
         _, preds = torch.max(scores, dim = 1)
 
