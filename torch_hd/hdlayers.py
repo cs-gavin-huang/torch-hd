@@ -38,22 +38,19 @@ class RandomProjectionEncoder(nn.Module):
         return out
 
 class IDLevelEncoder(nn.Module):
-    def __init__(self, dim_in, D, qbins = 16, pact=False, nbits=3, max_val = None,
-            min_val = None, sparsity = 0.5, quantize=False):
+    def __init__(self, dim_in, D, qbins = 16, max_val = None, min_val = None, 
+            nbits = 2, sparsify = False, sparsity = None, quantize=False):
         super().__init__()
         self.dim_in = dim_in
         self.D = D
         self.pact = pact
         self.quant = quantize
-        self.sparsity= sparsity
+        self.sparsity = sparsity
+        if sparsity is not None:
+            self.sparsity = 0.5
+        self.sparsify = sparsify
 
-        if pact:
-            self.nbits = nbits
-            self.alpha = nn.Parameter(torch.tensor(2.0))
-            self.maxval = 2 ** nbits
-            self.minval = 0
-            self.activn = pact_actvn.apply
-        else:
+        if quantize:
             assert max_val is not None
             assert min_val is not None
 
@@ -92,20 +89,18 @@ class IDLevelEncoder(nn.Module):
         x = self.flat(x)
         x = x.clamp(self.minval, self.maxval)
         
-        if self.pact:
-            x = self.activn(x, self.alpha, self.nbits)
-
         #idx = torch.floor(x / self.bin_len).type(torch.long)
         idx = torch.searchsorted(self.intervals.detach(), x)
         encoded = (self.lvl_hvs.detach()[idx] * self.id_hvs.detach()).sum(dim=1)
         if self.quant:
             val = torch.tensor(2 ** self.nbits)
-            encoded = torch.clamp(encoded, -val, val-1)
+            encoded = torch.clamp(encoded, -val, val)
         else:
             encoded = torch.clamp(encoded, -1, 1)
-            ones = torch.ones_like(encoded) * self.sparsity
-            ones = 2 * torch.bernoulli(ones) - 1
-            encoded[encoded == 0] = ones[encoded == 0]
+            if self.sparsify:
+                ones = torch.ones_like(encoded) * self.sparsity
+                ones = 2 * torch.bernoulli(ones) - 1
+                encoded[encoded == 0] = ones[encoded == 0]
         
         return encoded
 
