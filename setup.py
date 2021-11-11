@@ -11,7 +11,7 @@ setuptools.setup(
     description="Optimized implementations of HD functions using pytorch with GPU support",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/rishikanthc/torch-hd",
+    url="https://rishikanthc.github.io/torch-hd/",
     project_urls={
         "Bug Tracker": "https://github.com/rishikanthc/torch-hd/issues",
     },
