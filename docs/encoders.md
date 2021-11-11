@@ -24,6 +24,8 @@ torch_hd.hdlayers.RandomProjectionEncoder(dim_in, D = 5000, p = 0.5, dist = 'nor
 	mean = 0.0, std = 1.0, quantize = True)
 ```
 
+---
+
 Applies the Random Projection Encoding method. The function creates a projection matrix
 sampled from either a bernoulli or normal distribution. The input data passed is flattened
 and then projected into hypervector space using the projection matrix. Quantization to
@@ -32,6 +34,8 @@ For more details about this method refer [BRIC: Locality-based Encoding for Ener
 
 The method expects an input in the form of `M x N` where `M` is the number of data points
 and `N` is the number of features in each data point.
+
+---
 
 ### Parameters
 - **dim_in**{: .text-blue-100 } (*int*{: .text-purple-200 }) - the number of input features (`N`)
