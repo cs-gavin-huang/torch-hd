@@ -22,7 +22,7 @@ This section provides the API reference for the various HDC encoding methods.
 <h3>
 ```python
 torch_hd.hdlayers.RandomProjectionEncoder(dim_in, D = 5000, p = 0.5, dist = 'normal',
-	mean = 0.0, std = 1.0, quantize = True)`
+	mean = 0.0, std = 1.0, quantize = True)
 ```
 </h3>
 
