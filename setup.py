@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="torch-hd", # Replace with your own username
-    version="0.0.1",
+    version="1.0.0",
     author="Rishikanth",
     author_email="r3chandr@ucsd.edu",
     description="Optimized implementations of HD functions using pytorch with GPU support",
