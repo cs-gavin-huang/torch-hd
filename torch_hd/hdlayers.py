@@ -4,7 +4,7 @@ import numpy as np
 import math
 
 class RandomProjectionEncoder(nn.Module):
-    def __init__(self, dim_in, D = 5000, p = 0.5, dist = 'normal', mean = 0.0,
+    def __init__(self, dim_in, D = 5000, p = 0.5, dist = 'bernoulli', mean = 0.0,
             std = 1.0, quantize = True):
         super().__init__()
         self.D = D
@@ -14,8 +14,8 @@ class RandomProjectionEncoder(nn.Module):
 
         if quantize:
             if dist == 'bernoulli':
-                rand_proj = 2 * torch.rand(size = (dim_in, D))
-                proj = torch.where(rand_proj > p, 1, -1).type(torch.float)
+                probs = torch.ones((dim_in, D)) * p
+                proj = 2 * torch.bernoulli(probs) - 1
             elif dist == 'normal':
                 means = torch.ones((dim_in, D)) * mean
                 std = torch.ones((dim_in, D)) * std
@@ -159,7 +159,7 @@ class pact_actvn(torch.autograd.Function):
 
         return dLdy_q * x_range.float(), grad_alpha, None
 
-class hd_classifier(nn.Module):
+class HDClassifier(nn.Module):
     def __init__(self, nclasses, D, alpha = 1.0, clip = False, cdt = False, k = 10, sparsity=0.5):
         super().__init__()
         self.class_hvs = nn.Parameter(torch.zeros(size=(nclasses, D)), requires_grad = False)
@@ -170,7 +170,7 @@ class hd_classifier(nn.Module):
         self.cdt = cdt
         self.D = D
         self.cdt_k = k
-        self.p = p
+        self.p = sparsity
     
     def forward(self, encoded, targets = None):
         scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
@@ -220,7 +220,7 @@ class hd_classifier(nn.Module):
     
     def normalize_class_hvs(self):
         for idx in range(self.class_hvs.shape[0]):
-            self.class_hvs[idx] /= torch.linalg.norm(self.class_hvs[idx])
+            self.class_hvs[idx] /= torch.linalg.vector_norm(self.class_hvs[idx])
 
 
 

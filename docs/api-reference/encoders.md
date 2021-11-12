@@ -22,7 +22,7 @@ This section provides the API reference for the various HDC encoding methods.
 
 
 <div class="code-example" markdown=1>
-### *CLASS*{: .text-blue-300 } &nbsp;&nbsp; `torch_hd.hdlayers.RandomProjectionEncoder(dim_in, D = 5000, p = 0.5, `<br/> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;` dist = 'normal', mean = 0.0, std = 1.0, quantize = True)`
+### *CLASS*{: .text-blue-300 } &nbsp;&nbsp; `torch_hd.hdlayers.RandomProjectionEncoder(dim_in, D = 5000, p = 0.5, `<br/> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;` dist = 'bernoulli', mean = 0.0, std = 1.0, quantize = True)`
 {: .no_toc .fs-5 .text-blue-300 }
 </div>
 
@@ -41,7 +41,7 @@ and `M` is the number of features in each data point.
 - **dim_in**{: .text-blue-100 } (*`int`*{: .fs-5 .text-purple-200 }) - the number of input features (`N`)
 - **D**{: .text-blue-100 } (*`int`*{: .fs-5 .text-purple-200 }) - The dimensionality of the hypervector. Default: 5000
 - **p**{: .text-blue-100 } (*`float`*{: .fs-5 .text-purple-200 }) - If `dist` is `bernoulli` this defines the probability. If `dist` is `normal` then this is the threshold for quantization if `quantize` is set to `True`. This parameter is ignored for non-quantized calls.
-- **dist**{: .text-blue-100 } (*`string`*{: .fs-5 .text-purple-200 }) - `'normal', 'bernoulli'`. This sets the distribution from which to sample the projection matrix from. Default: `'normal'`
+- **dist**{: .text-blue-100 } (*`string`*{: .fs-5 .text-purple-200 }) - `'normal', 'bernoulli'`. This sets the distribution from which to sample the projection matrix from. Default: `'bernoulli'`
 - **mean**{: .text-blue-100 } (*`float`*{: .fs-5 .text-purple-200 }) - The mean to be used for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
 - **std**{: .text-blue-100 } (*`float`*{: .fs-5 .text-purple-200 }) - The standard deviation for the normal distribution. Ignored if `dist` is not `normal`. Default: 0.0
 - **quantize**{: .text-blue-100 } (*`bool`*{: .fs-5 .text-purple-200 }) - Whether to quantize the projection matrix and the output or not. If set to `True`, all values are quantized to `{1, -1}`. This flag also decides whether the output hypervector is quantized or not. If set to `False` then all values will be `float`.
@@ -106,7 +106,7 @@ is the number of features in each data point
 <div class="code-example" markdown=1>
 
 <div class="code-example" markdown=1>
-### *CLASS*{: .text-blue-300 } `nclasses, D, alpha = 1.0, clip = False, cdt = False, k = 10, sparsity=0.5`
+### *CLASS*{: .text-blue-300 } `torch_hd.utils.HDClassifier(nclasses, D, alpha = 1.0, clip = False, `<br/> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;` cdt = False, k = 10, sparsity=0.5)`
 {: .no_toc .text-blue-300 }
 </div>
 

@@ -54,7 +54,7 @@ is a number indicating the class `0, 1, ... nclasses - 1`
 
 
 <div class="code-example" markdown=1>
-### *FUNCTION*{: .text-blue-300 } &nbsp;&nbsp; `train_hd(encoder, classifier, trainloader, process_batch = None, `<br/> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`nepochs=10, device='cuda', mode='norm', valloader=None):`
+### *FUNCTION*{: .text-blue-300 } &nbsp;&nbsp; `train_hd(encoder, classifier, trainloader, process_batch = None, `<br/> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`nepochs=10, device='cpu', mode='norm', valloader=None):`
 {: .no_toc .fs-5 .text-blue-300 }
 </div>
 This method implements a simple PyTorch training loop which iterates over the data in batches and
@@ -70,7 +70,7 @@ to generate dataloader
 - **process_batch**{: .text-blue-100 } (*`python function`*{: .fs-5 .text-purple-200 }) - any preprocessing to be done to the data before 
 feeding it to the encoder. Pass a method. This will be called just before HD encoding.
 - **nepochs**{: .text-blue-100 } (*`python function`*{: .fs-5 .text-purple-200 }) - Number of epochs to train for. Default: 10
-- **device**{: .text-blue-100 } (*`string`*{: .fs-5 .text-purple-200 }) - device to train on. One of `'cpu', 'cuda'`. You can also specify specific GPUs by passing `cuda:0`
+- **device**{: .text-blue-100 } (*`string`*{: .fs-5 .text-purple-200 }) - device to train on. One of `'cpu', 'cuda'`. You can also specify specific GPUs by passing `cuda:0`. Default: `'cpu'`
 - **norm**{: .text-blue-100 } (*`string`*{: .fs-5 .text-purple-200 }) - One of `'norm', 'clip', 'None'`. Default: `'norm'`
 	- `norm` normalizes the class hypervectors at the end of training (most commonly used in literature and the default setting
 	- `'clip'` the class hypervectors are clipped to `[-1, 1]` at the end of training
@@ -93,7 +93,7 @@ feeding it to the encoder. Pass a method. This will be called just before HD enc
 
 
 <div class="code-example" markdown=1>
-### *FUNCTION*{: .text-blue-300 } &nbsp;&nbsp; `test_hd(encoder, classifier, testloader,process_batch = None, `<br/> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`device = 'cuda', show_mistakes = False, cm = False)`
+### *FUNCTION*{: .text-blue-300 } &nbsp;&nbsp; `test_hd(encoder, classifier, testloader,process_batch = None, `<br/> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`device = 'cpu', show_mistakes = False, cm = False)`
 {: .no_toc .fs-5 .text-blue-300 }
 </div>
 
@@ -107,7 +107,7 @@ and prints the overall test accuracy.
 - **testloader**{: .text-blue-100 } (*`torch.utils.data.DataLoader`*{: .fs-5 .text-purple-200 }) - The pytorch test dataloader
 - **process_batch**{: .text-blue-100 } (*`python function`*{: .fs-5 .text-purple-200 }) - any preprocessing to be done to the data before 
 feeding it to the encoder. Pass a method. This will be called just before HD encoding.
-- **device**{: .text-blue-100 } (*`string`*{: .fs-5 .text-purple-200 }) - device to train on. One of `'cpu', 'cuda'`. You can also specify specific GPUs by passing `cuda:0`
+- **device**{: .text-blue-100 } (*`string`*{: .fs-5 .text-purple-200 }) - device to train on. One of `'cpu', 'cuda'`. You can also specify specific GPUs by passing `cuda:0`. Default: `'cpu'`
 - **show_mistakes**{: .text-blue-100 } (*`bool`*{: .fs-5 .text-purple-200 }) - Setting this flag to `True` will show the number of mistakes for each class
 - **cm**{: .text-blue-100 } (*`bool`*{: .fs-5 .text-purple-200 }) - Setting this flag to `True` will generate a confusion matrix using seaborn and save the figure to the current directory
 

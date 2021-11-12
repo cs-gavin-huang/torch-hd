@@ -38,7 +38,7 @@ def hd_argparser():
 
     return parser
 
-def train_hd(encoder, classifier, trainloader, process_batch = None, nepochs=10, device='cuda', mode='norm', valloader=None):
+def train_hd(encoder, classifier, trainloader, process_batch = None, nepochs=10, device='cpu', mode=None, valloader=None):
     model = encoder.to(device)
     classifier = classifier.to(device)
     t = tqdm(range(len(trainloader)))
@@ -99,16 +99,20 @@ def train_hd(encoder, classifier, trainloader, process_batch = None, nepochs=10,
         classifier.normalize_class_hvs()
     elif mode == 'clip':
         classifier.class_hvs = nn.Parameter(classifier.class_hvs.clamp(-1, 1), requires_grad = False)
-    else:
+    elif mode is None:
         pass
+    else:
+        print("Illegal mode. Defaulting to None")
 
 
     return classifier
 
-def predict(model, classifier, dataloader, process_batch = None, device='cuda'):
+def predict(model, classifier, dataloader, process_batch = None, device='cpu'):
     classifier = classifier.to(device)
+    model = model.to(device)
 
     classifier.eval()
+    model.eval()
     nclasses = classifier.class_hvs.shape[0]
     overall_acc = 0.0
 
@@ -134,8 +138,9 @@ def predict(model, classifier, dataloader, process_batch = None, device='cuda'):
 
 
 
-def test_hd(encoder, classifier, testloader,process_batch = None, device = 'cuda', show_mistakes = False, cm = False):
+def test_hd(encoder, classifier, testloader,process_batch = None, device = 'cpu', show_mistakes = False, cm = False):
     classifier = classifier.to(device)
+    encoder = encoder.to(device)
 
     classifier.eval()
     nclasses = classifier.class_hvs.shape[0]
@@ -168,9 +173,10 @@ def test_hd(encoder, classifier, testloader,process_batch = None, device = 'cuda
         acc = accuracy(preds, y)
         overall_acc += acc.cpu().item()
 
-        for i in range(nclasses):
-            incorrect = y[torch.bitwise_and(preds != y, y == i)]
-            mistakes[i] += len(incorrect)
+        if show_mistakes:
+            for i in range(nclasses):
+                incorrect = y[torch.bitwise_and(preds != y, y == i)]
+                mistakes[i] += len(incorrect)
 
         t.update()
     t.refresh()
