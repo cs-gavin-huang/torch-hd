@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Utilities
+title: utilities
 parent: API Reference
 nav_order: 2
 ---
@@ -63,8 +63,8 @@ The function returns the trained hdmodel.
 
 ### Parameters
 {: .no_toc }
-- **encoder**{: .text-blue-100 } (*`torch_hd.hdlayers.<encoder-type>Encoder`*{: .fs-5 .text-purple-200 }) - The encoder layer. See [Encoders](encoders)
-- **classifier**{: .text-blue-100 } (*`torch_hd.hdlayers.hd_classifier`*{: .fs-5 .text-purple-200 }) - The `hd_classifier` layer. See [Encoders](encoders)
+- **encoder**{: .text-blue-100 } (*`torch_hd.hdlayers.<encoder-type>Encoder`*{: .fs-5 .text-purple-200 }) - The encoder layer. See [Encoders](hdlayers)
+- **classifier**{: .text-blue-100 } (*`torch_hd.hdlayers.hd_classifier`*{: .fs-5 .text-purple-200 }) - The `hd_classifier` layer. See [Encoders](hdlayers)
 - **trainloader**{: .text-blue-100 } (*`torch.utils.data.DataLoader`*{: .fs-5 .text-purple-200 }) - The pytorch train dataloader. Use [`create_dataloader`](#CREATE DATALOADER)
 to generate dataloader
 - **process_batch**{: .text-blue-100 } (*`python function`*{: .fs-5 .text-purple-200 }) - any preprocessing to be done to the data before 
@@ -103,7 +103,7 @@ and prints the overall test accuracy.
 ### Parameters
 {: .no_toc }
 - **encoder**{: .text-blue-100 } (*`torch_hd.hdlayers.<encoder-type>Encoder`*{: .fs-5 .text-purple-200 }) - The encoder layer. This must be the same encoder used for training
-- **classifier**{: .text-blue-100 } (*`torch_hd.hdlayers.hd_classifier`*{: .fs-5 .text-purple-200 }) - The trained `hd_classifier` layer returned by `train_hd`. See [Encoders](encoders)
+- **classifier**{: .text-blue-100 } (*`torch_hd.hdlayers.hd_classifier`*{: .fs-5 .text-purple-200 }) - The trained `hd_classifier` layer returned by `train_hd`. See [Encoders](hdlayers)
 - **testloader**{: .text-blue-100 } (*`torch.utils.data.DataLoader`*{: .fs-5 .text-purple-200 }) - The pytorch test dataloader
 - **process_batch**{: .text-blue-100 } (*`python function`*{: .fs-5 .text-purple-200 }) - any preprocessing to be done to the data before 
 feeding it to the encoder. Pass a method. This will be called just before HD encoding.

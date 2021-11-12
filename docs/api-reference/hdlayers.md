@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Encoders
+title: hdlayers
 parent: API Reference
 nav_order: 1
 ---
