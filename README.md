@@ -18,6 +18,11 @@ pip3 install torch-hd
 ```
 Requires python 3.6+ and PyTorch 1.8.2 or later.
 
+To compile it locally clone this repo and run
+```bash
+python setup.py install
+```
+
 ### Quick start: Encode and decode a vector using ID-Level encoding
 
 ```python
