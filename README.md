@@ -37,6 +37,8 @@ tensor([[0., 4., 1., 3., 0.]])
 tensor([[0., 4., 1., 3., 0.]])
 ```
 
+#### Checkout the Examples section for a classification example
+
 ### Functionalities available
 
 Currently Torch-HD supports 3 different encoding methodologies namely
