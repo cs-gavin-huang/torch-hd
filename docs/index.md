@@ -19,6 +19,14 @@ The package also provides HD based ML functions for classification tasks.
 ---
 
 ## Getting started
+Torch-HD builds on top of PyTorch and follows its semantics closely. You would use most components
+of this library as layers just like how you do in PyTorch except for the functional implementation.
+
+
+### Note
+Torch-HD does not support multi-gpu training or testing yet. This is due to a limitation
+of pytorch which prevents us from averaging the weights during training. If anyone
+knows workarounds or a way to implement this please create a pull request or contact me.
 
 ### Installation 
 
@@ -49,19 +57,19 @@ tensor([[0., 4., 1., 3., 0.]])
 
 ### Functionalities available
 
-Currently Torch-HD supports 3 different encoding methodologies namely
+Currently Torch-HD supports 3 different encoding methodologies:
 - Random Projection Encoding
 - ID-Level Encoding
 - Selective Kanerva Coding
 - Pact quantization
 
-
 Apart from encoding functionalities, the library also provides a HD classifier which
-can be used for training and inference on classification tasks
+can be used for training and inference on classification tasks.
+The package also includes utility functions for training, testing and creating dataloaders.
 
 ### Coming soon
 - [] Implement fractional-binding
-- [] Utility functions for training and validation
+- [x] Utility functions for training and validation
 - Different VSA architectures
 	- [] Multiply-Add-Permute (MAP) - real, binary and integer vector spaces
 	- [] Holographic Reduced Representations (HRR)
@@ -74,3 +82,4 @@ can be used for training and inference on classification tasks
 ### Contributing
 
 Contributions to help improve the implementation are welcome. Please create a pull request on the repo or report issues.
+Feel free to email me at [r3chandr@ucsd.edu](mailto:r3chandr@ucsd.edu)
