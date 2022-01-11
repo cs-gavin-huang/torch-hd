@@ -22,6 +22,11 @@ The package also provides HD based ML functions for classification tasks.
 Torch-HD builds on top of PyTorch and follows its semantics closely. You would use most components
 of this library as layers just like how you do in PyTorch except for the functional implementation.
 
+If you are new to HD computing and would like an overview. This article provides an
+introduction to HD computing.
+
+[Introduction to HD Computing](https://rishikanthc.com/posts/intro-to-hd-computing/)
+
 
 ### Note
 Torch-HD does not support multi-gpu training or testing yet. This is due to a limitation

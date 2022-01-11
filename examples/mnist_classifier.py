@@ -17,7 +17,7 @@ test_loader = DataLoader(testset, batch_size = 512, shuffle = False)
 
 encoder = nn.Sequential(
         nn.Flatten(),
-        hd.RandomProjectionEncoder(dim_in = 784, D = 10000, dist = 'bernoulli')
+        hd.RandomProjectionEncoder(dim_in = 784, D = 10000)
     )
 model = hd.HDClassifier(nclasses = 10, D = 10000)
 

@@ -4,27 +4,16 @@ import numpy as np
 import math
 
 class RandomProjectionEncoder(nn.Module):
-    def __init__(self, dim_in, D = 5000, p = 0.5, dist = 'bernoulli', mean = 0.0,
-            std = 1.0, quantize = True):
+    def __init__(self, dim_in, D = 5000, p = 0.5, mean = 0.0, std = 1.0,
+            quantize_encodings = True):
         super().__init__()
         self.D = D
-        self.quantize = quantize
+        self.quantize_encodings = quantize_encodings
         self.dim_in = dim_in
         self.flat = nn.Flatten()
 
-        if quantize:
-            if dist == 'bernoulli':
-                probs = torch.ones((dim_in, D)) * p
-                proj = 2 * torch.bernoulli(probs) - 1
-            elif dist == 'normal':
-                means = torch.ones((dim_in, D)) * mean
-                std = torch.ones((dim_in, D)) * std
-                proj = torch.normal(means, std)
-                proj = torch.where(proj > p, 1, -1).type(torch.float)
-        else:
-            means = torch.ones((dim_in, D)) * mean
-            std = torch.ones((dim_in, D)) * std
-            proj = torch.normal(means, std).type(torch.float)
+        probs = torch.ones((dim_in, D)) * p
+        proj = 2 * torch.bernoulli(probs) - 1
 
         self.proj_matrix = nn.Parameter(proj, requires_grad = False)
 
@@ -32,7 +21,7 @@ class RandomProjectionEncoder(nn.Module):
         x = self.flat(x)
         out = torch.matmul(x, self.proj_matrix.detach())
 
-        if self.quantize:
+        if self.quantize_encodings:
             out = torch.sign(out)
 
         return out
@@ -174,6 +163,10 @@ class HDClassifier(nn.Module):
     
     def forward(self, encoded, targets = None):
         scores = torch.matmul(encoded, self.class_hvs.transpose(0, 1))
+        norm_encoded = torch.linalg.norm(encoded, ord = 2, dim = 1)
+        norm_class = torch.linalg.norm(self.class_hvs, ord = 2, dim = 1)
+        norm = norm_encoded[:,None] * norm_class.T
+        scores = scores / norm
 
         with torch.no_grad():
             if not self.oneshot:
