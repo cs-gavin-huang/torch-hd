@@ -1,19 +1,28 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 import math
 
 class RandomProjectionEncoder(nn.Module):
-    def __init__(self, dim_in, D = 5000, p = 0.5, mean = 0.0, std = 1.0,
+    def __init__(self, dim_in, D = 5000, dist = 'bernoulli', p = 0.5, mean = 0.0, std = 1.0,
             quantize_encodings = True):
         super().__init__()
         self.D = D
         self.quantize_encodings = quantize_encodings
         self.dim_in = dim_in
+        self.mean = mean
+        self.dist = dist
         self.flat = nn.Flatten()
 
-        probs = torch.ones((dim_in, D)) * p
-        proj = 2 * torch.bernoulli(probs) - 1
+        if dist == 'bernoulli':
+            probs = torch.ones((dim_in, D)) * p
+            proj = 2 * torch.bernoulli(probs) - 1
+        elif dist == 'normal':
+            normal_dist = np.random.normal(mean, std, size=(dim_in, D)).astype(np.single)
+            proj = torch.from_numpy(normal_dist).type(torch.float)
+        else:
+            raise ValueError("Invalid distribution type.")
 
         self.proj_matrix = nn.Parameter(proj, requires_grad = False)
 
@@ -22,7 +31,10 @@ class RandomProjectionEncoder(nn.Module):
         out = torch.matmul(x, self.proj_matrix.detach())
 
         if self.quantize_encodings:
-            out = torch.sign(out)
+            if self.dist == 'bernoulli':
+                out = torch.sign(out)
+            elif self.dist == 'normal':
+                out = torch.where(out >= self.mean, 1, -1).type(torch.float)
 
         return out
 
